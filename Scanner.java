@@ -225,6 +225,60 @@ public class Scanner {
 				sym = Symbol.gtr;
 			}
 			break;
+<<<<<<< HEAD
+		case '/':
+			getch();
+			if (ch == '*') {
+				boolean end = true;
+				System.out.print("识别出注释  /*  \n");
+				char a = 0, b = 0;
+				getch();
+				while (end) {
+					if (b != 0) {
+						b = a;
+					} else
+						b = ch;
+					getch();
+					a = ch;
+//					System.out.print(a);
+					if (b == '*' && a == '/') {
+						end = false;
+						break;
+					}
+				}
+				getch();
+			}else if(ch == '/') {
+				cc = ll;
+				ch = ' ';
+				System.out.println("识别出注释//");
+				getch();
+			}
+			else {
+				sym = Symbol.slash;
+			}
+			//---------------------------------
+=======
+		case '+':		//增添++
+			getch();
+			if(ch == '+') {
+				sym = Symbol.plusplus;
+				System.out.println("识别出++");
+				getch();
+			}else {
+				sym = Symbol.plus;
+			}
+			break;
+		case '-':		//增添--
+			getch();
+			if(ch == '-') {
+				sym = Symbol.minusminus;
+				System.out.println("识别出--");
+				getch();
+			}else {
+				sym = Symbol.minus;
+			}
+>>>>>>> Three
+			break;
 		default:		// 其他为单字符操作符（如果符号非法则返回nil）
 			sym = ssym[ch];
 			if (sym != Symbol.period)
