@@ -225,7 +225,6 @@ public class Scanner {
 				sym = Symbol.gtr;
 			}
 			break;
-<<<<<<< HEAD
 		case '/':
 			getch();
 			if (ch == '*') {
@@ -257,27 +256,6 @@ public class Scanner {
 				sym = Symbol.slash;
 			}
 			//---------------------------------
-=======
-		case '+':		//增添++
-			getch();
-			if(ch == '+') {
-				sym = Symbol.plusplus;
-				System.out.println("识别出++");
-				getch();
-			}else {
-				sym = Symbol.plus;
-			}
-			break;
-		case '-':		//增添--
-			getch();
-			if(ch == '-') {
-				sym = Symbol.minusminus;
-				System.out.println("识别出--");
-				getch();
-			}else {
-				sym = Symbol.minus;
-			}
->>>>>>> Three
 			break;
 		default:		// 其他为单字符操作符（如果符号非法则返回nil）
 			sym = ssym[ch];
