@@ -99,7 +99,7 @@ public class Table {
 				break;
 			}
 			System.out.println(msg);
-			PL0.fas.println(msg);   //打印在文件中
+			PL0.fas.println(msg);
 		}
 		System.out.println();
 	}

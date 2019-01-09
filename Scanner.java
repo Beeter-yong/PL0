@@ -225,6 +225,37 @@ public class Scanner {
 				sym = Symbol.gtr;
 			}
 			break;
+		case '+':		//增添++
+			getch();
+			if(ch == '+') {
+				sym = Symbol.plusplus;
+				System.out.println("识别出++");
+				getch();
+			}else {
+				sym = Symbol.plus;
+			}
+			break;
+		case '-':		//增添--
+			getch();
+			if(ch == '-') {
+				sym = Symbol.minusminus;
+				System.out.println("识别出--");
+				getch();
+			}else {
+				sym = Symbol.minus;
+			}
+			break;
+//-------------------------------------------------------
+		case '*':
+			getch();
+			if(ch == '=' ) {
+				sym = Symbol.timeseql;
+				System.out.println("识别出*=号");
+				getch();
+			}else {
+				sym = Symbol.times;
+			}
+			break;
 		case '/':
 			getch();
 			if (ch == '*') {
@@ -251,11 +282,15 @@ public class Scanner {
 				ch = ' ';
 				System.out.println("识别出注释//");
 				getch();
+			}else if(ch == '=') {
+				sym = Symbol.slasheql;
+				System.out.println("识别出/=号");
+				getch();
 			}
 			else {
 				sym = Symbol.slash;
 			}
-			//---------------------------------
+//-------------------------------------------------------
 			break;
 		default:		// 其他为单字符操作符（如果符号非法则返回nil）
 			sym = ssym[ch];
