@@ -1,4 +1,5 @@
-﻿import java.util.BitSet;
+﻿package pl;
+import java.util.BitSet;
 
 /**
  * 我们把 java.util.BitSet 包装一下，以便于编写代码

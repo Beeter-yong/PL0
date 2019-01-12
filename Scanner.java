@@ -1,4 +1,5 @@
-﻿import java.io.BufferedReader;
+﻿package pl;
+import java.io.BufferedReader;
 import java.io.IOException;
 
 /**
@@ -84,26 +85,33 @@ public class Scanner {
 		ssym['.'] = Symbol.period;
 		ssym['#'] = Symbol.neq;
 		ssym[';'] = Symbol.semicolon;
+		ssym['!'] = Symbol.falsenot;
 		
 		// 设置保留字名字,按照字母顺序，便于折半查找
-		word = new String[] {"begin", "call", "const", "do", "end", "if",
-			"odd", "procedure", "read", "then", "var", "while", "write"};
+		word = new String[] {"begin", "call", "char","const", "do", "downto", "else", "end", "for", "if",
+				"odd", "procedure", "read", "return", "then", "to", "var", "while", "write"};
 		
 		// 设置保留字符号
 		wsym = new Symbol[PL0.norw];
 		wsym[0] = Symbol.beginsym;
 		wsym[1] = Symbol.callsym;
-		wsym[2] = Symbol.constsym;
-		wsym[3] = Symbol.dosym;
-		wsym[4] = Symbol.endsym;
-		wsym[5] = Symbol.ifsym;
-		wsym[6] = Symbol.oddsym;
-		wsym[7] = Symbol.procsym;
-		wsym[8] = Symbol.readsym;
-		wsym[9] = Symbol.thensym;
-		wsym[10] = Symbol.varsym;
-		wsym[11] = Symbol.whilesym;
-		wsym[12] = Symbol.writesym;
+		wsym[2] = Symbol.charsym;
+		wsym[3] = Symbol.constsym;
+		wsym[4] = Symbol.dosym;
+		wsym[5] = Symbol.downtosym;
+		wsym[6] = Symbol.elsesym;
+		wsym[7] = Symbol.endsym;
+		wsym[8] = Symbol.forsym;
+		wsym[9] =  Symbol.ifsym;
+		wsym[10] = Symbol.oddsym;
+		wsym[11] = Symbol.procsym;
+		wsym[12] = Symbol.readsym;
+		wsym[13] = Symbol.returnsym;
+		wsym[14] = Symbol.thensym;
+		wsym[15] = Symbol.tosym;
+		wsym[16] = Symbol.varsym;
+		wsym[17] = Symbol.whilesym;
+		wsym[18] = Symbol.writesym;
 	}
 	
 	/**
@@ -118,7 +126,7 @@ public class Scanner {
 				ll = l.length();
 				cc = 0;
 				line = l.toCharArray();
-				System.out.println(PL0.interp.cx + " " + l);
+//				System.out.println(PL0.interp.cx + " " + l);
 				PL0.fa1.println(PL0.interp.cx + " " + l);
 			}
 		} catch (IOException e) {
@@ -225,11 +233,52 @@ public class Scanner {
 				sym = Symbol.gtr;
 			}
 			break;
+		case '+':		//增添++
+			getch();
+			if(ch == '+') {
+				sym = Symbol.plusplus;
+//				System.out.println("识别出++");
+				getch();
+			}else if(ch == '=') {	//添加+=
+				sym = Symbol.pluseq;
+//				System.out.println("识别+=");
+				getch();
+			}
+			else {
+				sym = Symbol.plus;
+			}
+			break;
+		case '-':		//增添--
+			getch();
+			if(ch == '-') {
+				sym = Symbol.minusminus;
+//				System.out.println("识别出--");
+				getch();
+			}else if(ch == '=') {	//添加-=
+				sym = Symbol.minueq;
+//				System.out.println("识别出-=");
+				getch();
+			}
+			else {
+				sym = Symbol.minus;
+			}
+			break;
+//-------------------------------------------------------
+		case '*':
+			getch();
+			if(ch == '=' ) {
+				sym = Symbol.timeseql;
+//				System.out.println("识别出*=号");
+				getch();
+			}else {
+				sym = Symbol.times;
+			}
+			break;
 		case '/':
 			getch();
 			if (ch == '*') {
 				boolean end = true;
-				System.out.print("识别出注释  /*  \n");
+//				System.out.print("识别出注释  /*  \n");
 				char a = 0, b = 0;
 				getch();
 				while (end) {
@@ -249,14 +298,24 @@ public class Scanner {
 			}else if(ch == '/') {
 				cc = ll;
 				ch = ' ';
-				System.out.println("识别出注释//");
+//				System.out.println("识别出注释//");
+				getch();
+			}else if(ch == '=') {
+				sym = Symbol.slasheql;
+//				System.out.println("识别出/=号");
 				getch();
 			}
 			else {
 				sym = Symbol.slash;
 			}
-			//---------------------------------
 			break;
+		case '!':
+			getch();
+			// 添加取反
+			sym = Symbol.falsenot;
+//			System.out.println("识别出 取反 符号");
+			break;
+//-------------------------------------------------------
 		default:		// 其他为单字符操作符（如果符号非法则返回nil）
 			sym = ssym[ch];
 			if (sym != Symbol.period)

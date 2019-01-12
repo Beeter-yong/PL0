@@ -1,4 +1,6 @@
-﻿import java.io.*;
+﻿package pl;
+
+import java.io.*;
 
 /**
  *<p>这个版本的 PL/0 编译器根据 C 语言的版本改写而成。两个版本在基本逻辑上是一致
@@ -36,17 +38,19 @@ public class PL0 {
 	
 	// 为避免多次创建BufferedReader，我们使用全局统一的Reader
 	public static BufferedReader stdin;			// 标准输入
+	public View view;
 	
 	/**
 	 * 构造函数，初始化编译器所有组成部分
 	 * @param fin PL/0 源文件的输入流
 	 */
-	public PL0(BufferedReader fin) {
+	public PL0(BufferedReader fin, View view) {
 		// 各部件的构造函数中都含有C语言版本的 init() 函数的一部分代码
 		table = new Table();
 		interp = new Interpreter();
 		lex = new Scanner(fin);
 		parser = new Parser(lex, table, interp);
+		this.view = view;
 	}
 
 	/**
@@ -70,8 +74,9 @@ public class PL0 {
 			PL0.fa1.close();
 			PL0.fas.close();
 		}
-		if (abort)
+		if (abort) {
 			System.exit(0);
+		}
 				
 		// 编译成功是指完成编译过程并且没有错误
 		return (Err.err == 0);
@@ -80,38 +85,26 @@ public class PL0 {
 	/**
 	 * 主函数
 	 */
-	public static void main(String[] args) {
+	public void start(PL0 pl0) {
 		// 原来 C 语言版的一些语句划分到compile()和Parser.parse()中
 		String fname = "";
 		stdin = new BufferedReader(new InputStreamReader(System.in));
-		BufferedReader fin;
+//		BufferedReader fin;
 		try {
-			// 输入文件名
-			fname = "";
-			System.out.print("Input pl/0 file?   ");
-			while (fname.equals(""))
-				fname = stdin.readLine();
-			fin = new BufferedReader(new FileReader(fname), 4096);
 
 			// 是否输出虚拟机代码
-			fname = "";
-			System.out.print("List object code?(Y/N)");
-			while (fname.equals(""))
-				fname = stdin.readLine();
+			fname = "y";
 			PL0.listswitch = (fname.charAt(0)=='y' || fname.charAt(0)=='Y');
 			
 			// 是否输出名字表
-			fname = "";
-			System.out.print("List symbol table?(Y/N)");
-			while (fname.equals(""))
-				fname = stdin.readLine();
+			fname = "y";
 			PL0.tableswitch = (fname.charAt(0)=='y' || fname.charAt(0)=='Y');
 			
 			PL0.fa1 = new PrintStream("fa1.tmp");
 			PL0.fa1.println("Input pl/0 file?   " + fname);
 
 			// 构造编译器并初始化
-			PL0 pl0 = new PL0(fin);
+//			PL0 pl0 = new PL0(fin);
 			
 			if (pl0.compile()) {
 				// 如果成功编译则接着解释运行
@@ -119,13 +112,14 @@ public class PL0 {
 				interp.interpret();
 				PL0.fa2.close();
 			} else {
-				System.out.print("Errors in pl/0 program");
+//				System.out.print("Errors in pl/0 program");
 			}
 			
 		} catch (IOException e) {
-			System.out.println("Can't open file!");
+//			System.out.println("Can't open file!");
 		}
 
-		System.out.println();
+//		System.out.println();
 	}
+	
 }

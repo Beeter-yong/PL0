@@ -1,4 +1,8 @@
-﻿/**
+﻿package pl;
+
+import javax.swing.JOptionPane;
+
+/**
  * 类P-Code指令类型
  */
 enum Fct {
@@ -31,6 +35,8 @@ class Instruction {
 public class Interpreter {
 	// 解释执行时使用的栈大小
 	final int stacksize = 500;
+	JOptionPane jp;
+	int temp;
 	
 	/**
 	 * 虚拟机代码指针，取值范围[0, cxmax-1] 
@@ -68,7 +74,7 @@ public class Interpreter {
 		if (PL0.listswitch) {
 			for (int i=start; i<cx; i++) {
 				String msg = i + " " + code[i].f + " " + code[i].l + " " + code[i].a;
-				System.out.println(msg);
+//				System.out.println(msg);
 				PL0.fa.println(msg);
 			}
 		}
@@ -82,7 +88,7 @@ public class Interpreter {
 		Instruction i;							// 存放当前指令
 		int[] s = new int[stacksize];		// 栈
 		
-		System.out.println("start pl0");
+//		System.out.println("start pl0");
 		t = b = p = 0;
 		s[0] = s[1] = s[2] = 0;
 		do {
@@ -148,20 +154,22 @@ public class Interpreter {
 					s[t-1] = (s[t-1] <= s[t] ? 1 : 0);
 					break;
 				case 14:
-					System.out.print(s[t-1]);
+//					System.out.print(s[t-1]);
 					PL0.fa2.print(s[t-1]);
 					t--;
 					break;
 				case 15:
-					System.out.println();
+//					System.out.println();
 					PL0.fa2.println();
 					break;
 				case 16:
-					System.out.print("?");
+//					System.out.print("?");
+					temp =Integer.parseInt(JOptionPane.showInputDialog(null,"请输入数据"));
 					PL0.fa2.print("?");
 					s[t] = 0;
 					try {
-						s[t] = Integer.parseInt(PL0.stdin.readLine());
+//						s[t] = Integer.parseInt(PL0.stdin.readLine());
+						s[t] = temp;
 					} catch (Exception e) {}
 					PL0.fa2.println(s[t]);
 					t++;

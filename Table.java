@@ -1,4 +1,5 @@
-﻿/**
+﻿package pl;
+/**
  * 符号类型，为避免和Java的关键字Object冲突，我们改成Objekt
  */
 enum Objekt {
@@ -82,9 +83,10 @@ public class Table {
 	public void debugTable(int start) {
 		if (!PL0.tableswitch)
 			return;
-		System.out.println("TABLE:");
-		if (start >= tx)
-			System.out.println("    NULL");
+//		System.out.println("TABLE:");
+		if (start >= tx) {
+//			System.out.println("    NULL");
+		}
 		for (int i=start+1; i<= tx; i++) {
 			String msg = "OOPS! UNKNOWN TABLE ITEM!";
 			switch (table[i].kind) {
@@ -98,10 +100,10 @@ public class Table {
 				msg = "    " + i + " proc  " + table[i].name + " lev=" + table[i].level + " addr=" + table[i].adr + " size=" + table[i].size;
 				break;
 			}
-			System.out.println(msg);
-			PL0.fas.println(msg);   //打印在文件中
+//			System.out.println(msg);
+			PL0.fas.println(msg);
 		}
-		System.out.println();
+//		System.out.println();
 	}
 
 	/**

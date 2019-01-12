@@ -1,4 +1,6 @@
-﻿/**
+﻿package pl;
+
+/**
  *　　语法分析器。这是PL/0分析器中最重要的部分，在语法分析的过程中穿插着语法错误检查和目标代码生成。
  */
 public class Parser {
@@ -45,16 +47,19 @@ public class Parser {
 		statbegsys.set(Symbol.beginsym);
 		statbegsys.set(Symbol.callsym);
 		statbegsys.set(Symbol.ifsym);
+		statbegsys.set(Symbol.forsym);
 		statbegsys.set(Symbol.whilesym);
-		statbegsys.set(Symbol.readsym);		//读
-		statbegsys.set(Symbol.writesym);	//写
+		statbegsys.set(Symbol.readsym);			
+		statbegsys.set(Symbol.writesym);
 
 		// 设置因子开始符号集
 		facbegsys = new SymSet(symnum);
 		facbegsys.set(Symbol.ident);
 		facbegsys.set(Symbol.number);
-		facbegsys.set(Symbol.lparen);	//左括号
-
+		facbegsys.set(Symbol.lparen);
+		facbegsys.set(Symbol.plusplus);		//++
+		facbegsys.set(Symbol.minusminus);	//--
+		facbegsys.set(Symbol.falsenot);
 	}
 	
 	/**
@@ -102,48 +107,51 @@ public class Parser {
 	
 	/**
 	 * 分析<分程序>
+	 * 
 	 * @param lev 当前分程序所在层
 	 * @param fsys 当前模块后跟符号集
 	 */
-	public void parseBlock(int lev, SymSet fsys) {
-		// <分程序> := [<常量说明部分>][<变量说明部分>][<过程说明部分>]<语句>
-		
-		int dx0, tx0, cx0;				// 保留初始dx，tx和cx
-		SymSet nxtlev = new SymSet(symnum);
-		
-		dx0 = dx;						// 记录本层之前的数据量（以便恢复）
-		dx = 3;
-		tx0 = table.tx;					// 记录本层名字的初始位置（以便恢复）
-		table.get(table.tx).adr = interp.cx;
-		
-		interp.gen(Fct.JMP, 0, 0);		//------------生成条件跳转，但跳出循环的地址未知---------//
-		
-		if (lev > PL0.levmax)
-			Err.report(32);
-		
-		// 分析<说明部分>
-		do {
-			// <常量说明部分>
-			if (sym == Symbol.constsym) {
-				nextSym();
-				// the original do...while(sym == ident) is problematic, thanks to calculous
-				// do
-				parseConstDeclaration(lev);
-				while (sym == Symbol.comma) {
+		public void parseBlock(int lev, SymSet fsys) {
+			// <分程序> := [<常量说明部分>][<变量说明部分>][<过程说明部分>]<语句>
+			
+			int dx0, tx0, cx0;				// 保留初始dx，tx和cx
+			SymSet nxtlev = new SymSet(symnum);
+			
+			dx0 = dx;						// 记录本层之前的数据量（以便恢复）
+			dx = 3;
+			tx0 = table.tx;					// 记录本层名字的初始位置（以便恢复）
+			table.get(table.tx).adr = interp.cx;
+			
+			interp.gen(Fct.JMP, 0, 0);
+			
+			if (lev > PL0.levmax)
+				Err.report(32);
+			
+			// 分析<说明部分>
+			do {
+				// <常量说明部分>
+				if (sym == Symbol.constsym) {
 					nextSym();
+					// the original do...while(sym == ident) is problematic, thanks to calculous
+					// do
 					parseConstDeclaration(lev);
+					while (sym == Symbol.comma) {
+						nextSym();
+						parseConstDeclaration(lev);
+					}
+					
+					if (sym == Symbol.semicolon)
+						nextSym();
+					else
+						Err.report(5);				// 漏掉了逗号或者分号
+					// } while (sym == ident);
 				}
-				
-				if (sym == Symbol.semicolon)
-					nextSym();
-				else
-					Err.report(5);				// 漏掉了逗号或者分号
-			}
 			
 			// <变量说明部分>
 			if (sym == Symbol.varsym) {
 				nextSym();
-				
+				// the original do...while(sym == ident) is problematic, thanks to calculous
+				// do {
 				parseVarDeclaration(lev);
 				while (sym == Symbol.comma)
 				{
@@ -155,12 +163,13 @@ public class Parser {
 					nextSym();
 				else
 					Err.report(5);				// 漏掉了逗号或者分号
+				// } while (sym == ident);
 			}
 			
 			// <过程说明部分>
 			while (sym == Symbol.procsym) {
 				nextSym();
-				if (sym == Symbol.ident) {		//--------此处应是程序名字
+				if (sym == Symbol.ident) {
 					table.enter(Objekt.procedure, lev, dx);
 					nextSym();
 				} else { 
@@ -267,10 +276,9 @@ public class Parser {
 	void parseStatement(SymSet fsys, int lev) {
 		SymSet nxtlev;
 		// Wirth 的 PL/0 编译器使用一系列的if...else...来处理
-		// 但是你的助教认为下面的写法能够更加清楚地看出这个函数的处理逻辑
 		switch (sym) {
 		case ident:
-			parseAssignStatement(fsys, lev); 	//分析赋值语句
+			parseAssignStatement(fsys, lev);
 			break;
 		case readsym:
 			parseReadStatement(fsys, lev);
@@ -290,13 +298,169 @@ public class Parser {
 		case whilesym:
 			parseWhileStatement(fsys, lev);
 			break;
+		case plusplus:
+			parsePlusplusStatement(fsys, lev);
+			break;
+		case minusminus:
+			parseMinusminusStatement(fsys, lev);
+			break;
+		case forsym:
+			parseForsymStatement(fsys, lev);
+			break;
 		default:
 			nxtlev = new SymSet(symnum);
 			test(fsys, nxtlev, 19);
 			break;
 		}
 	}
+//------------------------------------------------------------------
+	
+	/**
+	 * 分析前加加運算
+	 * @param fsys
+	 * @param lev
+	 */
+	private void parsePlusplusStatement(SymSet fsys, int lev) {
+		int i;
+		nextSym();
+		if(sym == Symbol.ident) {
+			i = table.position(lex.id);
+			Table.Item item = table.get(i);
+			if(i <= 0) {
+				Err.report(11);	
+			}else {
+				if(item.kind != Objekt.variable) {
+					Err.report(12);
+					i = 0;
+				}
+				else {		//++後跟的是變量
+					nextSym();
+					interp.gen(Fct.LOD, lev - item.level, item.adr);	//找到变量地址，将其值入栈
+					interp.gen(Fct.LIT, 0, 1);		//将常数1取到栈顶
+					interp.gen(Fct.OPR, 0, 2);		//执行加操作
+					interp.gen(Fct.STO, lev - item.level, item.adr);
+				}
+			}
+		}else {
+			Err.report(19);		//++后應該跟標識符
+		}	
+	}
+	
+	/**
+	 * 分析前減減運算
+	 * @param fsys
+	 * @param lev
+	 */
+	private void parseMinusminusStatement(SymSet fsys, int lev) {
+		int i;
+		nextSym();
+		if(sym == Symbol.ident) {
+			i = table.position(lex.id);
+			Table.Item item = table.get(i);
+			if(i <= 0) {
+				Err.report(11);	
+			}else {
+				if(item.kind != Objekt.variable) {
+					Err.report(12);
+					i = 0;
+				}
+				else {		//--後跟的是變量
+					nextSym();
+					interp.gen(Fct.LOD, lev - item.level, item.adr);	//找到变量地址，将其值入栈
+					interp.gen(Fct.LIT, 0, 1);		//将常数1取到栈顶
+					interp.gen(Fct.OPR, 0, 3);		//执行加操作
+					interp.gen(Fct.STO, lev - item.level, item.adr);
+				}
+			}
+		}else {
+			Err.report(19);		//--后應該跟標識符
+		}	
+	}
 
+	/**
+	 * 分析for循环
+	 * @param fsys
+	 * @param lev
+	 */
+	private void parseForsymStatement(SymSet fsys, int lev) {
+		int i;
+		int cx1,cx2;
+		SymSet nxtlev;
+		nextSym();
+		if(sym == Symbol.ident) {
+			i = table.position(lex.id);
+			Table.Item item = table.get(i);
+			if(i == 0) {
+				Err.report(11);		//没有定义则报错
+			}
+			else {
+				if(item.kind != Objekt.variable) {
+					Err.report(12);		/*标识符不是变量*/
+					i = 0;
+				}else {
+					nextSym();
+					if(sym == Symbol.becomes) {		//标识符后是赋值号
+						nextSym();
+						nxtlev = (SymSet) fsys.clone();
+						nxtlev.set(Symbol.tosym);
+						nxtlev.set(Symbol.downtosym);
+						nxtlev.set(Symbol.dosym);
+						parseExpression(nxtlev, lev);
+						if(i != 0) {
+							interp.gen(Fct.STO, lev - item.level, item.adr);
+						}
+					}
+				}
+			}
+			cx1 = interp.cx;
+			if(sym == Symbol.tosym) {		//按照for-to语句处理
+				nextSym();
+				nxtlev = (SymSet) fsys.clone();
+				nxtlev.set(Symbol.dosym);
+				parseExpression(nxtlev, lev);	//计算赋值号后的表达式的结果放到栈顶
+				interp.gen(Fct.LOD, lev - item.level, item.adr);	//产生指令，把变量的值取到栈顶
+				interp.gen(Fct.OPR, 0, 11);		//产生指令，判断次栈顶是否大于等于栈顶
+				cx2 = interp.cx;		//保存循环体的结束的下一个位置
+				interp.gen(Fct.JPC, 0, 0);	//生成条件跳转，变量大于to值时跳出循环，但跳出地址未知
+				if(sym == Symbol.dosym) {
+					nextSym();
+					parseStatement(fsys, lev);
+					interp.gen(Fct.LOD, lev - item.level, item.adr);
+					interp.gen(Fct.LIT, 0, 1);
+					interp.gen(Fct.OPR, 0, 2);
+					interp.gen(Fct.STO, lev - item.level, item.adr);
+					interp.gen(Fct.JMP, 0, cx1);
+					interp.code[cx2].a = interp.cx;	
+				}else {
+					Err.report(18);		//缺少do
+				}
+			}
+			else if(sym == Symbol.downtosym) { 	//按照for-downto语句处理
+				nextSym();
+				nxtlev = (SymSet) fsys.clone();
+				nxtlev.set(Symbol.dosym);
+				parseExpression(nxtlev, lev);	//计算赋值号后的表达式的结果放到栈顶
+				interp.gen(Fct.LOD, lev - item.level, item.adr);	//产生指令，把变量的值取到栈顶
+				interp.gen(Fct.OPR, 0, 13);		//产生指令，判断次栈顶是否小于等于栈顶
+				cx2 = interp.cx;		//保存循环体的结束的下一个位置
+				interp.gen(Fct.JPC, 0, 0);	//生成条件跳转，变量大于to值时跳出循环，但跳出地址未知
+				if(sym == Symbol.dosym) {
+					nextSym();
+					parseStatement(fsys, lev);
+					interp.gen(Fct.LOD, lev - item.level, item.adr);	//产生指令，把变量的值取到栈顶
+					interp.gen(Fct.JPC, 0, 1);	//产生指令，把常量1取到栈顶
+					interp.gen(Fct.JPC, 0, 3);	//产生指令，栈顶减次栈顶
+					interp.gen(Fct.STO, lev - item.level, item.adr);	////生成指令，结果存到变量地址单元
+					interp.gen(Fct.JMP, 0, cx1);
+					interp.code[cx2].a = interp.cx;	
+				}else {
+					Err.report(18);		//缺少do
+				}
+			}
+		}
+	}
+//------------------------------------------------------------------
+	
 	/**
 	 * 分析<当型循环语句>
 	 * @param fsys 后跟符号集
@@ -464,7 +628,7 @@ public class Parser {
 		if (sym == Symbol.rparen) {
 			nextSym();
 		} else {
-			Err.report(33);					// 格式错误，应是右括号
+			Err.report(81);					// 格式错误，应是右括号
 			while (!fsys.get(sym))
 				nextSym();
 		}
@@ -478,25 +642,82 @@ public class Parser {
 	private void parseAssignStatement(SymSet fsys, int lev) {
 		int i;
 		SymSet nxtlev;
-		
-		i = table.position(lex.id);		//返回名字表中名字的位置
+
+		i = table.position(lex.id);
 		if (i > 0) {
 			Table.Item item = table.get(i);
 			if (item.kind == Objekt.variable) {
 				nextSym();
-				if (sym == Symbol.becomes)
+				if (sym == Symbol.becomes) {
 					nextSym();
+					nxtlev = (SymSet) fsys.clone();
+					parseExpression(nxtlev, lev);
+					// parseExpression将产生一系列指令，但最终结果将会保存在栈顶，执行sto命令完成赋值
+					interp.gen(Fct.STO, lev - item.level, item.adr);
+//-------------------------------------------------------------------
+				}
+				else if(sym == Symbol.plusplus) {		//后++
+					nextSym();
+					interp.gen(Fct.LOD, lev - item.level, item.adr);	//找到变量地址，将其值入栈
+					interp.gen(Fct.LIT, 0, 1);		//将常数1取到栈顶
+					interp.gen(Fct.OPR, 0, 2);		//执行加操作
+					interp.gen(Fct.STO, lev - item.level, item.adr);
+				}
+				else if(sym == Symbol.minusminus) {		//后--
+					nextSym();
+					interp.gen(Fct.LOD, lev - item.level, item.adr);	//找到变量地址，将其值入栈
+					interp.gen(Fct.LIT, 0, 1);		//将常数1取到栈顶
+					interp.gen(Fct.OPR, 0, 3);		//执行減操作
+					interp.gen(Fct.STO, lev - item.level, item.adr);
+				}
+				else if(sym == Symbol.slasheql) {	// /=运算
+					nextSym();
+					nxtlev = (SymSet) fsys.clone();
+					interp.gen(Fct.LOD, lev - item.level, item.adr);
+					parseExpression(nxtlev, lev);
+					interp.gen(Fct.OPR, 0, 5);
+					interp.gen(Fct.STO, lev - item.level, item.adr);
+				}
+				else if(sym == Symbol.timeseql) {	// *=运算
+					nextSym();
+					nxtlev = (SymSet) fsys.clone();
+					interp.gen(Fct.LOD, lev - item.level, item.adr);
+					parseExpression(nxtlev, lev);
+					interp.gen(Fct.OPR, 0, 4);
+					interp.gen(Fct.STO, lev - item.level, item.adr);
+				}
+				else if(sym == Symbol.pluseq) {	// +=运算
+					nextSym();
+					nxtlev = (SymSet) fsys.clone();
+					interp.gen(Fct.LOD, lev - item.level, item.adr);
+					parseExpression(nxtlev, lev);
+					interp.gen(Fct.OPR, 0, 2);
+					interp.gen(Fct.STO, lev - item.level, item.adr);
+				}
+				else if(sym == Symbol.minueq) {	// -=运算
+					nextSym();
+					nxtlev = (SymSet) fsys.clone();
+					interp.gen(Fct.LOD, lev - item.level, item.adr);	//生成指令，将变量放到栈顶
+					parseExpression(nxtlev, lev);
+					interp.gen(Fct.OPR, 0, 3);		//生成指令，栈顶减次栈顶
+//					interp.gen(Fct.OPR, 0, 1);		//生成指令，结果取反，则结果为次栈顶减栈顶
+					interp.gen(Fct.STO, lev - item.level, item.adr);	//生成指令，结果写回变量地址单元
+				}
+				else if(sym == Symbol.falsenot) {
+					nextSym();
+					nxtlev = (SymSet) fsys.clone();
+					interp.gen(Fct.LOD, lev - item.level, item.adr);	//生成指令，将变量放到栈顶
+					interp.gen(Fct.OPR, 0, 1);		//生成指令，结果取反
+					interp.gen(Fct.STO, lev - item.level, item.adr);	//生成指令，结果写回变量地址单元
+				}
+//-------------------------------------------------------------------
 				else
-					Err.report(13);					// 没有检测到赋值符号
-				nxtlev = (SymSet) fsys.clone();
-				parseExpression(nxtlev, lev);
-				// parseExpression将产生一系列指令，但最终结果将会保存在栈顶，执行sto命令完成赋值
-				interp.gen(Fct.STO, lev - item.level, item.adr);
+					Err.report(13); // 没有检测到赋值符号
 			} else {
-				Err.report(12);						// 赋值语句格式错误
+				Err.report(12); // 赋值语句格式错误
 			}
 		} else {
-			Err.report(11);							// 变量未找到
+			Err.report(11); // 变量未找到
 		}
 	}
 
@@ -526,7 +747,7 @@ public class Parser {
  			parseTerm(nxtlev, lev);
 		}
 		
-		// 分析{<加法运算符><项>}	？
+		// 分析{<加法运算符><项>}
 		while (sym == Symbol.plus || sym == Symbol.minus) {
 			addop = sym;
 			nextSym();
@@ -578,7 +799,6 @@ public class Parser {
 		
 		test(facbegsys, fsys, 24);			// 检测因子的开始符号
 		// the original while... is problematic: var1(var2+var3)
-		// thanks to macross
 		// while(inset(sym, facbegsys))
 		if (facbegsys.get(sym)) {
 			if (sym == Symbol.ident) {			// 因子为常量或变量
@@ -596,11 +816,73 @@ public class Parser {
 						Err.report(21);				// 不能为过程
 						break;
 					}
-				} else {
+				}
+				else {
 					Err.report(11);					// 标识符未声明
 				}
 				nextSym();
-			} else if (sym == Symbol.number) {	// 因子为数 
+//-------------------------------------------------------------				
+				if(sym == Symbol.plusplus) {
+					Table.Item item = table.get(i);
+					interp.gen(Fct.LIT, lev - item.level, 1);	//将值为入栈
+					interp.gen(Fct.OPR, lev - item.level, 2);	//+1,栈顶加次栈顶
+					interp.gen(Fct.STO, lev - item.level, item.adr);	//出栈取值到内存
+					interp.gen(Fct.LOD, lev - item.level, item.adr);	//取值到栈顶
+					interp.gen(Fct.LIT, 0, 1);		//将常数1取到栈顶
+					interp.gen(Fct.OPR, 0, 3);		//栈顶值减
+					nextSym();
+				}else if(sym == Symbol.minusminus) {
+					Table.Item item = table.get(i);
+					interp.gen(Fct.LIT, lev - item.level, 1);	//将值为入栈
+					interp.gen(Fct.OPR, lev - item.level, 3);	//-1,栈顶加次栈顶
+					interp.gen(Fct.STO, lev - item.level, item.adr);	//出栈取值到内存
+					interp.gen(Fct.LOD, lev - item.level, item.adr);	//取值到栈顶
+					interp.gen(Fct.LIT, 0, 1);		//将常数1取到栈顶
+					interp.gen(Fct.OPR, 0, 2);		//栈顶值减
+					nextSym();
+				}
+//-------------------------------------------------------------
+			}
+//--------------------------------------------------------------
+			else if(sym == Symbol.plusplus) {
+				nextSym();
+				if(sym == Symbol.ident) {
+					nextSym();
+					int i = table.position(lex.id);
+					Table.Item item = table.get(i);
+					if(i == 0) {
+						Err.report(11);
+					}else {
+						if(item.kind == Objekt.variable) {
+							interp.gen(Fct.LOD, lev - item.level, item.adr);	//找到变量地址，将其值入栈
+							interp.gen(Fct.LIT, 0, 1);		//将常数1取到栈顶
+							interp.gen(Fct.OPR, 0, 2);		//执行加操作
+							interp.gen(Fct.STO, lev - item.level, item.adr);
+							interp.gen(Fct.LOD, lev - item.level, item.adr);
+						}
+					}
+				}
+			}else if(sym == Symbol.minusminus) {
+				nextSym();
+				if(sym == Symbol.ident) {
+					nextSym();
+					int i = table.position(lex.id);
+					Table.Item item = table.get(i);
+					if(i == 0) {
+						Err.report(11);
+					}else {
+						if(item.kind == Objekt.variable) {
+							interp.gen(Fct.LOD, lev - item.level, item.adr);	//找到变量地址，将其值入栈
+							interp.gen(Fct.LIT, 0, 1);		//将常数1取到栈顶
+							interp.gen(Fct.OPR, 0, 3);		//执行加操作
+							interp.gen(Fct.STO, lev - item.level, item.adr);	//出栈取值到内存
+							interp.gen(Fct.LOD, lev - item.level, item.adr);	//取值到栈顶
+						}
+					}
+				}
+			}
+//--------------------------------------------------------------			
+			else if (sym == Symbol.number) {	// 因子为数 
 				int num = lex.num;
 				if (num > PL0.amax) {
 					Err.report(31);
@@ -612,7 +894,7 @@ public class Parser {
 				nextSym();
 				nxtlev = (SymSet) fsys.clone();
 				nxtlev.set(Symbol.rparen);
-				parseExpression(nxtlev, lev);	//分析表达式
+				parseExpression(nxtlev, lev);
 				if (sym == Symbol.rparen)
 					nextSym();
 				else
