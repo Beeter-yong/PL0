@@ -60,6 +60,7 @@ public class Parser {
 		facbegsys.set(Symbol.plusplus);		//++
 		facbegsys.set(Symbol.minusminus);	//--
 		facbegsys.set(Symbol.falsenot);
+		facbegsys.set(Symbol.chengfang);
 	}
 	
 	/**
@@ -703,12 +704,21 @@ public class Parser {
 //					interp.gen(Fct.OPR, 0, 1);		//生成指令，结果取反，则结果为次栈顶减栈顶
 					interp.gen(Fct.STO, lev - item.level, item.adr);	//生成指令，结果写回变量地址单元
 				}
-				else if(sym == Symbol.falsenot) {
+				else if(sym == Symbol.falsenot) {	//取反
 					nextSym();
 					nxtlev = (SymSet) fsys.clone();
 					interp.gen(Fct.LOD, lev - item.level, item.adr);	//生成指令，将变量放到栈顶
 					interp.gen(Fct.OPR, 0, 1);		//生成指令，结果取反
 					interp.gen(Fct.STO, lev - item.level, item.adr);	//生成指令，结果写回变量地址单元
+				}
+				else if(sym == Symbol.chengfang) {
+					nextSym();
+					nxtlev = (SymSet) fsys.clone();
+					interp.gen(Fct.LOD, lev - item.level, item.adr);
+					interp.gen(Fct.LOD, lev - item.level, item.adr);
+//					parseExpression(nxtlev, lev);
+					interp.gen(Fct.OPR, 0, 4);
+					interp.gen(Fct.STO, lev - item.level, item.adr);
 				}
 //-------------------------------------------------------------------
 				else
@@ -840,6 +850,13 @@ public class Parser {
 					interp.gen(Fct.LIT, 0, 1);		//将常数1取到栈顶
 					interp.gen(Fct.OPR, 0, 2);		//栈顶值减
 					nextSym();
+				}
+				else if(sym == Symbol.falsenot) {
+					Table.Item item = table.get(i);
+					interp.gen(Fct.LIT, lev - item.level, 1);
+					interp.gen(Fct.OPR, lev - item.level, 1);
+					interp.gen(Fct.STO, lev - item.level, item.adr);
+					interp.gen(Fct.LOD, lev - item.level, item.adr);
 				}
 //-------------------------------------------------------------
 			}

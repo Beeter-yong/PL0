@@ -9,7 +9,7 @@ public enum Symbol {
 	whilesym, writesym, readsym, dosym, callsym, constsym,
 	varsym, procsym, elsesym, forsym, tosym, downtosym, returnsym,
 	timeseql, slasheql, plusplus, minusminus, charsym,
-	pluseq,minueq,falsenot
+	pluseq,minueq,falsenot,chengfang
 }
 
 /*

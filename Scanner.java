@@ -270,7 +270,12 @@ public class Scanner {
 				sym = Symbol.timeseql;
 //				System.out.println("识别出*=号");
 				getch();
-			}else {
+			}
+			else if(ch == '*'){
+				sym = Symbol.chengfang;
+				getch();
+			}
+			else {
 				sym = Symbol.times;
 			}
 			break;
